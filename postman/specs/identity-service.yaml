@@ -1,0 +1,272 @@
+openapi: 3.0.0
+info:
+  title: Identity Service API
+  version: 1.0.0
+  description: API for managing user identities
+
+servers:
+  - url: http://localhost:3001
+    description: Local development server
+
+paths:
+  /users:
+    post:
+      summary: Create or look up a user
+      description: Creates a new user or returns an existing user if the email already exists.
+      operationId: createOrLookupUser
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+            examples:
+              newUser:
+                summary: Create a new user
+                value:
+                  name: Jane Doe
+                  email: jane.doe@example.com
+      responses:
+        '201':
+          description: New user created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+              examples:
+                created:
+                  summary: New user created
+                  value:
+                    user:
+                      id: "abc123"
+                      name: Jane Doe
+                      email: jane.doe@example.com
+        '200':
+          description: Email already exists — returns the existing user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExistingUserResponse'
+              examples:
+                existing:
+                  summary: Existing user found
+                  value:
+                    user:
+                      id: "abc123"
+                      name: Jane Doe
+                      email: jane.doe@example.com
+                    existing: true
+        '400':
+          description: Missing required fields.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingFields:
+                  summary: Missing name or email
+                  value:
+                    error: "name and email are required"
+
+    get:
+      summary: List all users
+      description: Returns a list of all registered users.
+      operationId: listUsers
+      tags:
+        - Users
+      responses:
+        '200':
+          description: A list of all users.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+              examples:
+                userList:
+                  summary: List of users
+                  value:
+                    users:
+                      - id: "abc123"
+                        name: Jane Doe
+                        email: jane.doe@example.com
+                      - id: "def456"
+                        name: John Smith
+                        email: john.smith@example.com
+
+  /users/{id}:
+    get:
+      summary: Get user by ID
+      description: Retrieves a single user by their unique identifier.
+      operationId: getUserById
+      tags:
+        - Users
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: User found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+              examples:
+                found:
+                  summary: User found
+                  value:
+                    user:
+                      id: "abc123"
+                      name: Jane Doe
+                      email: jane.doe@example.com
+        '404':
+          description: User not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                notFound:
+                  summary: User not found
+                  value:
+                    error: "user not found"
+
+  /health:
+    get:
+      summary: Health check
+      description: Returns the health status of the Identity Service.
+      operationId: healthCheck
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service is healthy.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              examples:
+                healthy:
+                  summary: Service is healthy
+                  value:
+                    status: "ok"
+                    service: "identity-api"
+
+components:
+  schemas:
+    User:
+      type: object
+      description: Represents a user identity.
+      required:
+        - id
+        - name
+        - email
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the user.
+          example: "abc123"
+        name:
+          type: string
+          description: Full name of the user.
+          example: "Jane Doe"
+        email:
+          type: string
+          format: email
+          description: Email address of the user.
+          example: "jane.doe@example.com"
+
+    CreateUserRequest:
+      type: object
+      description: Payload for creating or looking up a user.
+      required:
+        - name
+        - email
+      properties:
+        name:
+          type: string
+          description: Full name of the user.
+          example: "Jane Doe"
+        email:
+          type: string
+          format: email
+          description: Email address of the user.
+          example: "jane.doe@example.com"
+
+    UserResponse:
+      type: object
+      description: Response containing a single user.
+      required:
+        - user
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+
+    ExistingUserResponse:
+      type: object
+      description: Response when a user with the given email already exists.
+      required:
+        - user
+        - existing
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        existing:
+          type: boolean
+          description: Indicates the user already existed.
+          example: true
+
+    UserListResponse:
+      type: object
+      description: Response containing a list of users.
+      required:
+        - users
+      properties:
+        users:
+          type: array
+          description: Array of user objects.
+          items:
+            $ref: '#/components/schemas/User'
+
+    HealthResponse:
+      type: object
+      description: Health check response.
+      required:
+        - status
+        - service
+      properties:
+        status:
+          type: string
+          description: Health status of the service.
+          example: "ok"
+        service:
+          type: string
+          description: Name of the service.
+          example: "identity-api"
+
+    ErrorResponse:
+      type: object
+      description: Generic error response.
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Human-readable error message.
+          example: "name and email are required"
+
+  parameters:
+    UserId:
+      name: id
+      in: path
+      required: true
+      description: Unique identifier of the user.
+      schema:
+        type: string
+      example: "abc123"
+
+tags:
+  - name: Users
+    description: Operations related to user identity management.
+  - name: Health
+    description: Service health and availability checks.

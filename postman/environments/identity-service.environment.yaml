@@ -1,0 +1,10 @@
+name: "Identity Service – Dev"
+values:
+  - key: baseUrl
+    value: "http://localhost:3001"
+    enabled: true
+    description: "Base URL for the Identity Service"
+  - key: port
+    value: "3001"
+    enabled: true
+    description: "Port the Identity Service runs on"
